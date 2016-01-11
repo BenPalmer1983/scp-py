@@ -1,0 +1,5 @@
+
+
+python /code/python/scp-py/scp-py.py scpsync /home/ben/BlueBEAR/bxp912/apps /gpfs/bb/bxp912/apps bxp912@localhost 8001
+python /code/python/scp-py/scp-py.py scpsync /home/ben/BlueBEAR/bxp912/privatemodules /gpfs/bb/bxp912/privatemodules bxp912@localhost 8001
+python /code/python/scp-py/scp-py.py scpsync /home/ben/BlueBEAR/bxp912/work /gpfs/bb/bxp912/work bxp912@localhost 8001
