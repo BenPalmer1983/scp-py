@@ -342,12 +342,15 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
     if(int(lineArr[2])==1): # Dirs
       makePath = subString(lineArr[0],len(dirLocal)+1,len(lineArr[0])-len(dirLocal))
       ldc = ldc + 1
-      localDirs[ldc] = makePath
+      localDirs[ldc] = makePath.replace(' ','\ ')
     if(int(lineArr[2])==0): # Files
       makePath = subString(lineArr[0],len(dirLocal)+1,len(lineArr[0])-len(dirLocal))
-      lfc = lfc + 1
-      localFiles[lfc] = makePath
-      localFilesMod[lfc] = float(lineArr[1])
+      if(makePath==".localT.tar.gz" or makePath==".remoteT.tar.gz" or makePath==".tar.bash.local" or makePath==".tar.bash.remote"):
+        lfc = lfc
+      else:
+        lfc = lfc + 1
+        localFiles[lfc] = makePath.replace(' ','\ ')
+        localFilesMod[lfc] = float(lineArr[1])
   fh.close()
 # Clean up
   os.remove(cwd+"/.pytree.loc")
@@ -362,12 +365,15 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
     if(int(lineArr[2])==1): # Dirs
       makePath = subString(lineArr[0],len(dirRemote)+1,len(lineArr[0])-len(dirRemote))
       rdc = rdc + 1
-      remoteDirs[rdc] = makePath
+      remoteDirs[rdc] = makePath.replace(' ','\ ')
     if(int(lineArr[2])==0): # Files
       makePath = subString(lineArr[0],len(dirRemote)+1,len(lineArr[0])-len(dirRemote))
-      rfc = rfc + 1
-      remoteFiles[rfc] = makePath
-      remoteFilesMod[rfc] = float(lineArr[1])
+      if(makePath==".localT.tar.gz" or makePath==".remoteT.tar.gz" or makePath==".tar.bash.local" or makePath==".tar.bash.remote"):
+        rfc = rfc
+      else:
+        rfc = rfc + 1
+        remoteFiles[rfc] = makePath.replace(' ','\ ')
+        remoteFilesMod[rfc] = float(lineArr[1])
   fh.close()
 # Clean up
   os.remove(cwd+"/.pytree.rem")
@@ -421,6 +427,7 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
   if(dirCount>0):
     process = subprocess.Popen("ssh -p "+sshport+" "+ssh+" '"+cmd+"'", shell=True, stdout=subprocess.PIPE).stdout.read()
 # Files to remote
+  print "Copying files to Remote."
   cmdC = ""
   cmdU = ""
   i = 0
@@ -439,13 +446,13 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
     if(exists==False and localFiles[i]!=None):
       filesCreated = filesCreated + 1
       localFileTemp = localFiles[i]
-      localFileTemp = localFileTemp.replace(' ','\ ')
+#      localFileTemp = localFileTemp.replace(' ','\ ')
       cmdC = cmdC + "scp -p -P "+sshport+" "+dirLocal+localFileTemp+" "+ssh+":'"+dirRemote+localFileTemp+"'; "
       tarLocal = tarLocal + "--add-file="+subString(localFileTemp,2,len(localFileTemp)-1)+" \\\n"
     if(exists==True and localFiles[i]!=None and (localFilesMod[i]-remoteFilesMod[j])>30):
       filesUpdated = filesUpdated + 1
       localFileTemp = localFiles[i]
-      localFileTemp = localFileTemp.replace(' ','\ ')
+#      localFileTemp = localFileTemp.replace(' ','\ ')
       cmdU = cmdU + "scp -p -P "+sshport+" "+dirLocal+localFileTemp+" "+ssh+":'"+dirRemote+localFileTemp+"'; "
       tarLocal = tarLocal + "--add-file="+subString(localFileTemp,2,len(localFileTemp)-1)+" \\\n"
   if(filesCreated>0):
@@ -460,8 +467,8 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
   if(tarMode==True and (filesCreated+filesUpdated)>0):
     fh = open(cwd+"/.tar.bash.local","w")
     fh.write("#!/bin/bash\n")
-    fh.write("cd "+dirRemote+"\n")
-    fh.write(tarRemote+"\n")
+    fh.write("cd "+dirLocal+"\n")
+    fh.write(tarLocal+"\n")
     fh.close()
     cmd = "chmod 777 "+cwd+"/.tar.bash.local; "+cwd+"/.tar.bash.local; rm "+cwd+"/.tar.bash.local;"
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()  # tar, remove bash
@@ -471,6 +478,7 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
     cmd = "cd "+dirRemote+"; tar xzvf "+dirRemote+"/.localT.tar.gz; rm "+dirRemote+"/.localT.tar.gz;"                                  # untar on remote, remove tar file (cmd)
     process = subprocess.Popen("ssh -p "+sshport+" "+ssh+" '"+cmd+"'", shell=True, stdout=subprocess.PIPE).stdout.read()               # untar on remote, remove tar file
 # Files to local
+  print "Copying files to Local."
   cmdC = ""
   cmdU = ""
   i = 0
@@ -489,15 +497,16 @@ def scpSync(dirLocal, dirRemote, ssh, sshport):
     if(exists==False and remoteFiles[i]!=None):
       filesCreated = filesCreated + 1
       remoteFileTemp = remoteFiles[i]
-      remoteFileTemp = remoteFileTemp.replace(' ','\ ')
+#      remoteFileTemp = remoteFileTemp.replace(' ','\ ')
       cmdC = cmdC + "scp -p -P "+sshport+" "+ssh+":'"+dirRemote+remoteFileTemp+"' "+dirLocal+remoteFileTemp+"; "
-      tarRemote = tarRemote + "--add-file=\""+subString(remoteFileTemp,2,len(remoteFileTemp)-1)+"\" \\\n"
+      tarRemote = tarRemote + "--add-file="+subString(remoteFileTemp,2,len(remoteFileTemp)-1)+" \\\n"
+      print subString(remoteFileTemp,2,len(remoteFileTemp)-1)
     if(exists==True and remoteFiles[i]!=None and (remoteFilesMod[i]-localFilesMod[j])>30):
       filesUpdated = filesUpdated + 1
       remoteFileTemp = remoteFiles[i]
-      remoteFileTemp = remoteFileTemp.replace(' ','\ ')
+#      remoteFileTemp = remoteFileTemp.replace(' ','\ ')
       cmdU = cmdU + "scp -p -P "+sshport+" "+ssh+":'"+dirRemote+remoteFileTemp+"' "+dirLocal+remoteFileTemp+"; "
-      tarRemote = tarRemote + "--add-file=\""+subString(remoteFileTemp,2,len(remoteFileTemp)-1)+"\" \\\n"
+      tarRemote = tarRemote + "--add-file="+subString(remoteFileTemp,2,len(remoteFileTemp)-1)+" \\\n"
   if(filesCreated>0):
     if(tarMode==False):
       process = subprocess.Popen(cmdC, shell=True, stdout=subprocess.PIPE).stdout.read()
